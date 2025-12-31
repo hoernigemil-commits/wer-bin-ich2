@@ -3,32 +3,38 @@ import { collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/
 
 const playersRef = collection(db, "players");
 
-/* Seite 1: Eigener Name */
-window.saveName = function () {
-  const name = document.getElementById("realName").value;
-  localStorage.setItem("realName", name);
-  window.location.href = "role.html";
-};
-
-/* Seite 2: Spielname eingeben */
-window.saveRole = async function () {
-  const role = document.getElementById("gameName").value;
-  const realName = localStorage.getItem("realName");
-
-  await addDoc(playersRef, {
-    realName: realName,
-    role: role
+/* Index-Seite: Name speichern und weiterleiten */
+const nextBtnIndex = document.getElementById("nextBtn");
+if (nextBtnIndex && window.location.pathname.endsWith("index.html")) {
+  nextBtnIndex.addEventListener("click", () => {
+    const name = document.getElementById("realName").value;
+    if(!name) return alert("Bitte Name eingeben");
+    localStorage.setItem("realName", name);
+    window.location.href = "role.html";
   });
+}
 
-  window.location.href = "game.html";
-};
+/* Role-Seite: Spielname speichern und weiterleiten */
+const nextBtnRole = document.getElementById("nextBtn");
+if (nextBtnRole && window.location.pathname.endsWith("role.html")) {
+  nextBtnRole.addEventListener("click", async () => {
+    const role = document.getElementById("gameName").value;
+    if(!role) return alert("Bitte Spielname eingeben");
 
-/* Seite 3: Andere Spieler anzeigen */
+    const realName = localStorage.getItem("realName");
+    await addDoc(playersRef, { realName, role });
+
+    window.location.href = "game.html";
+  });
+}
+
+/* Game-Seite: andere Spieler anzeigen */
 async function loadGame() {
   const myName = localStorage.getItem("realName");
   const list = document.getElementById("list");
   if (!list) return;
 
+  list.innerHTML = "";
   const snapshot = await getDocs(playersRef);
 
   snapshot.forEach(doc => {
@@ -36,15 +42,14 @@ async function loadGame() {
     if (p.realName !== myName) {
       const div = document.createElement("div");
       div.className = "card";
-      div.innerHTML = `
-        <span>${p.realName}</span>
-        <strong>${p.role}</strong>
-      `;
+      div.innerHTML = `<span>${p.realName}</span> = <strong>${p.role}</strong>`;
       list.appendChild(div);
     }
   });
 }
 
-if (window.location.pathname.includes("game.html")) {
+if (window.location.pathname.endsWith("game.html")) {
   loadGame();
+  setInterval(loadGame, 3000); // alle 3 Sekunden aktualisieren
 }
+
